@@ -67,18 +67,6 @@ Mike Heald
 			drawing_canvas.removeEventListener('mousemove', mouseMoveFunc);
 		});
 
-
-		function touchMoveFunc(event){
-			let touch = event.touches[0];
-
-			let mouse_x = event.clientX - drawing_canvas.getBoundingClientRect().left;
-			let mouse_y = event.clientY - drawing_canvas.getBoundingClientRect().top;
-			ctx.lineTo(mouse_x, mouse_y);
-			ctx.stroke();
-			
-			ctx.beginPath();
-			ctx.moveTo(mouse_x, mouse_y);
-		}
 		
 		drawing_canvas.addEventListener('touchstart', (event) => {
 			let touch = event.touches[0]
@@ -95,7 +83,7 @@ Mike Heald
   			drawing_canvas.dispatchEvent(mouseEvent);
 		},false);
 
-		drawing_canvas.addEventListener("touchmove", function (e) {
+		drawing_canvas.addEventListener("touchmove", function (event) {
 			  event.preventDefault();
 			  let touch = event.touches[0];
 			  let mouseEvent = new MouseEvent("mousemove", {
