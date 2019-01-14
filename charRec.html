@@ -1,0 +1,158 @@
+<!-- 
+Mike Heald 
+1/5/2019
+-->
+
+<html>
+	<head>
+		<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.14.1/dist/tf.min.js"></script>
+	</head>
+	<body >
+	<div>
+	<h1>Character Recognition</h1>
+	</div>
+	<div>
+		<p>
+		I created this classifier using Python and tensorflow. I generated training data by using several fonts to create images with a single alphanumeric character with randomized size, rotation and placement. 
+		</p>
+		<p>
+		Draw a letter or number in the canvas below, then click Predict to have the model attempt to classify your drawing. 
+		</p>
+	</div>
+
+	<div>
+	<canvas id="draw_canv" height=128 width=128 style="border:1px solid #000000;"></canvas> <= Draw here
+	</div>
+	<div>
+	<input type='button' id='predict_btn' value='Predict' />
+	<input type='button' id='clear_btn' value='Clear' />
+	</div>
+	<div>
+		Prediction: <label id="prediction"></label>
+	</div>
+	<div>
+		Confidence: <label id="confidence"></label>
+	</div>
+	
+	
+	<script>
+		var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		var drawing_canvas = document.getElementById('draw_canv');
+		var ctx = drawing_canvas.getContext('2d');
+		ctx.lineWidth = 8;
+		
+		function mouseMoveFunc(event){
+			let mouse_x = event.clientX - drawing_canvas.getBoundingClientRect().left;
+			let mouse_y = event.clientY - drawing_canvas.getBoundingClientRect().top;
+			ctx.lineTo(mouse_x, mouse_y);
+			ctx.stroke();
+			
+			ctx.beginPath();
+			ctx.moveTo(mouse_x, mouse_y);
+		}
+		
+		drawing_canvas.addEventListener('mousedown', (event) => {
+			
+			let mouse_x = event.clientX - drawing_canvas.getBoundingClientRect().left;
+			let mouse_y = event.clientY - drawing_canvas.getBoundingClientRect().top;
+			
+			ctx.beginPath(); 
+			
+			ctx.moveTo(mouse_x, mouse_y);
+			
+			drawing_canvas.addEventListener('mousemove', mouseMoveFunc);
+		});
+		
+		drawing_canvas.addEventListener('mouseup', (event) => {
+			drawing_canvas.removeEventListener('mousemove', mouseMoveFunc);
+		});
+
+
+		function touchMoveFunc(event){
+			let touch = event.touches[0];
+
+			let mouse_x = event.clientX - drawing_canvas.getBoundingClientRect().left;
+			let mouse_y = event.clientY - drawing_canvas.getBoundingClientRect().top;
+			ctx.lineTo(mouse_x, mouse_y);
+			ctx.stroke();
+			
+			ctx.beginPath();
+			ctx.moveTo(mouse_x, mouse_y);
+		}
+		
+		drawing_canvas.addEventListener('touchstart', (event) => {
+			let touch = event.touches[0]
+			let mouseEvent = new MouseEvent("mousedown", {
+			    clientX: touch.clientX,
+			    clientY: touch.clientY
+			});
+			
+			drawing_canvas.dispatchEvent(mouseEvent);
+		}, false);
+		
+		drawing_canvas.addEventListener('touchend', (event) => {
+			let mouseEvent = new MouseEvent("mouseup", {});
+  			drawing_canvas.dispatchEvent(mouseEvent);
+		},false);
+
+		drawing_canvas.addEventListener("touchmove", function (e) {
+			  event.preventDefault();
+			  let touch = event.touches[0];
+			  let mouseEvent = new MouseEvent("mousemove", {
+			    clientX: touch.clientX,
+			    clientY: touch.clientY
+			  });
+			  drawing_canvas.dispatchEvent(mouseEvent);
+		}, false);
+		
+		document.getElementById('clear_btn').onclick = () => {
+			ctx.clearRect(0,0, drawing_canvas.width, drawing_canvas.height);
+		};
+	
+	
+
+		
+		
+
+		var model;
+		
+		async function loadModel(){
+			model = await tf.loadModel('https://s3.amazonaws.com/aws-website-sagefocusllc-uh0fm/js/model.json');
+			
+		}
+		
+		loadModel();
+		
+		function procImgData(data){
+			for(i=0; i < data.length; i++){
+				if((i+1)%4==0 && data[i] != 0){
+					data[i-3]=1;
+				}
+			}
+			return data;
+		}
+
+		document.getElementById('predict_btn').onclick = () => {
+			let imgData = ctx.getImageData(0,0,128,128);
+			
+			let inv = procImgData(imgData.data);
+			
+			let inv_data = new ImageData(inv,128);
+			
+			
+			
+		
+			let x_data = tf.fromPixels(inv_data, 1, dtype='int32').resizeNearestNeighbor([32,32]).expandDims(0);
+
+
+			
+			let prediction = model.predict(x_data).dataSync();
+					
+			let pred = prediction.indexOf(Math.max(...prediction));
+
+			document.getElementById('prediction').innerHTML = chars[pred];
+			document.getElementById('confidence').innerHTML = (prediction[pred]*100).toPrecision(3) +"%";
+		}
+	</script>
+	</body>
+</html>
