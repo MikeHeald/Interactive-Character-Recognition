@@ -19,7 +19,6 @@ Mike Heald
 		Draw a letter or number in the canvas below, then click Predict to have the model attempt to classify your drawing. 
 		</p>
 	</div>
-
 	<div>
 	<canvas id="draw_canv" height=128 width=128 style="border:1px solid #000000;"></canvas> <= Draw here
 	</div>
@@ -33,8 +32,6 @@ Mike Heald
 	<div>
 		Confidence: <label id="confidence"></label>
 	</div>
-	
-	
 	<script>
 		var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 		var drawing_canvas = document.getElementById('draw_canv');
@@ -52,7 +49,6 @@ Mike Heald
 		}
 		
 		drawing_canvas.addEventListener('mousedown', (event) => {
-			
 			let mouse_x = event.clientX - drawing_canvas.getBoundingClientRect().left;
 			let mouse_y = event.clientY - drawing_canvas.getBoundingClientRect().top;
 			
@@ -96,17 +92,11 @@ Mike Heald
 		document.getElementById('clear_btn').onclick = () => {
 			ctx.clearRect(0,0, drawing_canvas.width, drawing_canvas.height);
 		};
-	
-	
-
-		
-		
 
 		var model;
 		
 		async function loadModel(){
 			model = await tf.loadModel('https://s3.amazonaws.com/aws-website-sagefocusllc-uh0fm/js/model.json');
-			
 		}
 		
 		loadModel();
@@ -123,23 +113,18 @@ Mike Heald
 		document.getElementById('predict_btn').onclick = () => {
 			let imgData = ctx.getImageData(0,0,128,128);
 			
-			let inv = procImgData(imgData.data);
+			let imgBinary = procImgData(imgData.data);
 			
-			let inv_data = new ImageData(inv,128);
-			
-			
-			
+			let imgBinaryData = new ImageData(imgBinary,128);
 		
-			let x_data = tf.fromPixels(inv_data, 1, dtype='int32').resizeNearestNeighbor([32,32]).expandDims(0);
-
-
+			let x_data = tf.fromPixels(imgBinaryData, 1, dtype='int32').resizeNearestNeighbor([32,32]).expandDims(0);
 			
 			let prediction = model.predict(x_data).dataSync();
 					
-			let pred = prediction.indexOf(Math.max(...prediction));
+			let predMaxIndex = prediction.indexOf(Math.max(...prediction));
 
-			document.getElementById('prediction').innerHTML = chars[pred];
-			document.getElementById('confidence').innerHTML = (prediction[pred]*100).toPrecision(3) +"%";
+			document.getElementById('prediction').innerHTML = chars[predMaxIndex];
+			document.getElementById('confidence').innerHTML = (prediction[predMaxIndex]*100).toPrecision(3) +"%";
 		}
 	</script>
 	</body>
